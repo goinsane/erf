@@ -2,6 +2,8 @@ package erf
 
 import (
 	"go/build"
+	"os"
+	"runtime"
 	"strings"
 )
 
@@ -20,9 +22,15 @@ func trimSrcPath(s string) string {
 
 func trimDirs(s string) string {
 	for i := len(s) - 1; i > 0; i-- {
-		if s[i] == '/' {
+		if s[i] == '/' || s[i] == os.PathSeparator {
 			return s[i+1:]
 		}
 	}
 	return s
+}
+
+func getPC(size, skip int) []uintptr {
+	pc := make([]uintptr, size)
+	pc = pc[:runtime.Callers(skip, pc)]
+	return pc
 }
