@@ -7,14 +7,17 @@ import (
 	"strings"
 )
 
+// StackCaller stores the information of stack caller.
 type StackCaller struct {
 	runtime.Frame
 }
 
+// String is implementation of fmt.Stringer.
 func (c StackCaller) String() string {
 	return fmt.Sprintf("%s", c)
 }
 
+// Format is implementation of fmt.Formatter.
 func (c StackCaller) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(nil)
 	switch verb {
@@ -53,11 +56,13 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 	}
 }
 
+// StackTrace stores the information of stack trace.
 type StackTrace struct {
 	pc      []uintptr
 	callers []StackCaller
 }
 
+// NewStackTrace creates a new StackTrace object.
 func NewStackTrace(pc ...uintptr) *StackTrace {
 	t := &StackTrace{
 		pc:      make([]uintptr, len(pc)),
@@ -78,6 +83,7 @@ func NewStackTrace(pc ...uintptr) *StackTrace {
 	return t
 }
 
+// Duplicate duplicates the StackTrace object.
 func (t *StackTrace) Duplicate() *StackTrace {
 	if t == nil {
 		return nil
@@ -91,21 +97,12 @@ func (t *StackTrace) Duplicate() *StackTrace {
 	return t2
 }
 
-func (t *StackTrace) Len() int {
-	return len(t.callers)
-}
-
-func (t *StackTrace) Caller(index int) StackCaller {
-	if index < 0 || index >= t.Len() {
-		panic("out of range")
-	}
-	return t.callers[index]
-}
-
+// String is implementation of fmt.Stringer.
 func (t *StackTrace) String() string {
 	return fmt.Sprintf("%s", t)
 }
 
+// Format is implementation of fmt.Formatter.
 func (t *StackTrace) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(nil)
 	switch verb {
@@ -133,4 +130,17 @@ func (t *StackTrace) Format(f fmt.State, verb rune) {
 	if buf.Len() > 0 {
 		_, _ = f.Write(buf.Bytes())
 	}
+}
+
+// Len returns the length of the StackCaller slice.
+func (t *StackTrace) Len() int {
+	return len(t.callers)
+}
+
+// Caller returns a StackCaller on the given index. It panics if index is out of range.
+func (t *StackTrace) Caller(index int) StackCaller {
+	if index < 0 || index >= t.Len() {
+		panic("out of range")
+	}
+	return t.callers[index]
 }

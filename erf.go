@@ -88,7 +88,7 @@ func (e *Erf) Fmt() string {
 	return e.format
 }
 
-// Len returns the length of arguments.
+// Len returns the length of the arguments slice.
 func (e *Erf) Len() int {
 	return len(e.args)
 }
