@@ -1,10 +1,10 @@
 package erf
 
-type UnwrapIfc interface {
+type Wrapped interface {
 	Unwrap() error
 }
 
-type WrappedErrorIfc interface {
+type WrappedError interface {
 	error
-	UnwrapIfc
+	Wrapped
 }
