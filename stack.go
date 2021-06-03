@@ -20,7 +20,7 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 	switch verb {
 	case 's', 'v':
 		pad, wid, prec := byte('\t'), 0, 1
-		if f.Flag(' ') {
+		if f.Flag('-') {
 			pad = ' '
 			prec = 2
 		}
@@ -111,7 +111,7 @@ func (t *StackTrace) Format(f fmt.State, verb rune) {
 	switch verb {
 	case 's', 'v':
 		format := "%"
-		for _, r := range []rune{'+', '_', '#', ' ', '0'} {
+		for _, r := range []rune{'+', '-', '#'} {
 			if f.Flag(int(r)) {
 				format += string(r)
 			}
