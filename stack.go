@@ -132,6 +132,13 @@ func (t *StackTrace) Format(f fmt.State, verb rune) {
 	}
 }
 
+// PC returns program counters.
+func (t *StackTrace) PC() []uintptr {
+	result := make([]uintptr, len(t.pc))
+	copy(result, t.pc)
+	return result
+}
+
 // Len returns the length of the StackCaller slice.
 func (t *StackTrace) Len() int {
 	return len(t.callers)

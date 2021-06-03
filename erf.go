@@ -78,6 +78,13 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 	}
 }
 
+// PC returns program counters.
+func (e *Erf) PC() []uintptr {
+	result := make([]uintptr, len(e.pc))
+	copy(result, e.pc)
+	return result
+}
+
 // StackTrace returns a StackTrace of Erf.
 func (e *Erf) StackTrace() *StackTrace {
 	return NewStackTrace(e.pc...)
