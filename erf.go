@@ -43,9 +43,9 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 					format += string(r)
 				}
 			}
-			wid, prec := 0, 1
+			wid, prec := 1, 1
 			if f.Flag('-') {
-				prec = 2
+				wid, prec = 2, 2
 			}
 			if w, ok := f.Width(); ok {
 				wid = w
@@ -53,7 +53,6 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 			if p, ok := f.Precision(); ok {
 				prec = p
 			}
-			wid += prec
 			format += fmt.Sprintf("%d.%d", wid, prec)
 			format += "s"
 			buf.WriteRune('\n')

@@ -72,7 +72,7 @@ func main() {
 
 	fmt.Println("### Foo: show with stack trace with 2 whitespace chars of padding and 1 whitespace char of indent")
 	if err := Foo(-6); err != nil {
-		fmt.Printf("%+1.1v\n", err)
+		fmt.Printf("%+2.1v\n", err)
 	}
 	fmt.Println("### \n")
 
