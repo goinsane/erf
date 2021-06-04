@@ -5,6 +5,6 @@ type Wrapped interface {
 }
 
 type WrappedError interface {
-	error
 	Wrapped
+	error
 }
