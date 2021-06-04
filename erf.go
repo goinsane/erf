@@ -1,3 +1,4 @@
+// Package erf provides error management with stack trace.
 package erf
 
 import (
@@ -53,9 +54,10 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 			}
 			wid += prec
 			format += fmt.Sprintf("%d.%d", wid, prec)
-			format += "s\n"
+			format += "s"
 			buf.WriteRune('\n')
 			buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
+			buf.WriteRune('\n')
 			if !f.Flag('0') {
 				for err := e.Unwrap(); err != nil; {
 					if e2, ok := err.(*Erf); ok {
@@ -63,6 +65,7 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 						buf.WriteString(e2.Error())
 						buf.WriteRune('\n')
 						buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
+						buf.WriteRune('\n')
 					}
 					if wErr, ok := err.(WrappedError); ok {
 						err = wErr.Unwrap()
@@ -76,18 +79,6 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 	if buf.Len() > 0 {
 		_, _ = f.Write(buf.Bytes())
 	}
-}
-
-// PC returns program counters.
-func (e *Erf) PC() []uintptr {
-	result := make([]uintptr, len(e.pc))
-	copy(result, e.pc)
-	return result
-}
-
-// StackTrace returns a StackTrace of Erf.
-func (e *Erf) StackTrace() *StackTrace {
-	return NewStackTrace(e.pc...)
 }
 
 // Fmt returns the format argument of the formatting functions (Newf, Errorf or Wrap) that created Erf.
@@ -116,6 +107,18 @@ func (e *Erf) Args() []interface{} {
 	result := make([]interface{}, len(e.args))
 	copy(result, e.args)
 	return result
+}
+
+// PC returns program counters.
+func (e *Erf) PC() []uintptr {
+	result := make([]uintptr, len(e.pc))
+	copy(result, e.pc)
+	return result
+}
+
+// StackTrace returns a StackTrace of Erf.
+func (e *Erf) StackTrace() *StackTrace {
+	return NewStackTrace(e.pc...)
 }
 
 func (e *Erf) initialize(skip int) {
@@ -148,7 +151,7 @@ func Newf(format string, args ...interface{}) *Erf {
 	return e
 }
 
-// Errorf is synonymous with Newf except that it returns the error interface instead of the Erf pointer.
+// Errorf is similar with Newf except that it returns the error interface instead of the Erf pointer.
 func Errorf(format string, a ...interface{}) error {
 	e := newf(format, a...)
 	e.initialize(4)
