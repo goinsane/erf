@@ -10,10 +10,11 @@ import (
 
 // Erf is an error type that wraps the underlying error that stores and formats the stack trace.
 type Erf struct {
-	err    error
-	format string
-	args   []interface{}
-	pc     []uintptr
+	err        error
+	format     string
+	args       []interface{}
+	tagIndexes map[string]int
+	pc         []uintptr
 }
 
 // Error is implementation of error.
@@ -91,15 +92,15 @@ func (e *Erf) Len() int {
 	return len(e.args)
 }
 
-// Arg returns an argument on the given index. It panics if index is out of range.
+// Arg returns an argument value on the given index. It panics if index is out of range.
 func (e *Erf) Arg(index int) interface{} {
 	if index < 0 || index >= e.Len() {
-		panic("out of range")
+		panic("index is out of range")
 	}
 	return e.args[index]
 }
 
-// Args returns all arguments. It returns nil if Erf didn't create with formatting functions.
+// Args returns all argument values. It returns nil if Erf didn't create with formatting functions.
 func (e *Erf) Args() []interface{} {
 	if e.args == nil {
 		return nil
@@ -107,6 +108,40 @@ func (e *Erf) Args() []interface{} {
 	result := make([]interface{}, len(e.args))
 	copy(result, e.args)
 	return result
+}
+
+// Attach attaches tags to arguments, if arguments are given. It panics if an error occurs.
+func (e *Erf) Attach(tags ...string) *Erf {
+	if e.args == nil {
+		panic("args are not using")
+	}
+	if e.tagIndexes != nil {
+		panic("tags are already attached")
+	}
+	if len(tags) > len(e.args) {
+		panic("tags are more than args")
+	}
+	tagIndexes := make(map[string]int, len(tags))
+	for index, tag := range tags {
+		if _, ok := tagIndexes[tag]; ok {
+			panic("tag is already defined")
+		}
+		tagIndexes[tag] = index
+	}
+	e.tagIndexes = tagIndexes
+	return e
+}
+
+// Tag returns an argument value on the given tag. It panics if tag is not found.
+func (e *Erf) Tag(tag string) interface{} {
+	index := -1
+	if idx, ok := e.tagIndexes[tag]; ok {
+		index = idx
+	}
+	if index < 0 || index >= e.Len() {
+		panic("tag is not found")
+	}
+	return e.args[index]
 }
 
 // PC returns program counters.
