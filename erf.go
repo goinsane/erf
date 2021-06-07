@@ -83,6 +83,7 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				}
 			}
 		}
+		buf.WriteRune('\n')
 	}
 	if buf.Len() > 0 {
 		_, _ = f.Write(buf.Bytes())
