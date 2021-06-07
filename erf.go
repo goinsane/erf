@@ -130,6 +130,9 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	}
 	tagIndexes := make(map[string]int, len(tags))
 	for index, tag := range tags {
+		if tag == "" {
+			continue
+		}
 		if _, ok := tagIndexes[tag]; ok {
 			panic("tag is already defined")
 		}
