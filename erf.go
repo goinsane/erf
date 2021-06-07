@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 	"unsafe"
 )
 
@@ -35,43 +36,50 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(nil)
 	switch verb {
 	case 's', 'v':
-		buf.WriteString(e.err.Error())
-		if f.Flag('+') {
-			format := "%+"
-			for _, r := range []rune{'-', '#'} {
-				if f.Flag(int(r)) {
-					format += string(r)
+		if !f.Flag('+') {
+			buf.WriteString(e.err.Error())
+			break
+		}
+		format := "%+"
+		for _, r := range []rune{'-', '#'} {
+			if f.Flag(int(r)) {
+				format += string(r)
+			}
+		}
+		pad, wid, prec := byte('\t'), 0, 1
+		if f.Flag('-') {
+			pad = ' '
+			prec = 2
+		}
+		if w, ok := f.Width(); ok {
+			wid = w
+		}
+		if p, ok := f.Precision(); ok {
+			prec = p
+		}
+		format += fmt.Sprintf("%d.%d", wid, prec)
+		format += "s"
+		for _, line := range strings.Split(e.err.Error(), "\n") {
+			buf.WriteString(fmt.Sprintf("%s%s", strings.Repeat(string(pad), wid+prec), line))
+			buf.WriteRune('\n')
+		}
+		buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
+		buf.WriteRune('\n')
+		if !f.Flag('0') {
+			for err := e.Unwrap(); err != nil; {
+				if e2, ok := err.(*Erf); ok {
+					buf.WriteRune('\n')
+					for _, line := range strings.Split(e2.err.Error(), "\n") {
+						buf.WriteString(fmt.Sprintf("%s%s", strings.Repeat(string(pad), wid+prec), line))
+						buf.WriteRune('\n')
+					}
+					buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
+					buf.WriteRune('\n')
 				}
-			}
-			wid, prec := 1, 1
-			if f.Flag('-') {
-				wid, prec = 2, 2
-			}
-			if w, ok := f.Width(); ok {
-				wid = w
-			}
-			if p, ok := f.Precision(); ok {
-				prec = p
-			}
-			format += fmt.Sprintf("%d.%d", wid, prec)
-			format += "s"
-			buf.WriteRune('\n')
-			buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
-			buf.WriteRune('\n')
-			if !f.Flag('0') {
-				for err := e.Unwrap(); err != nil; {
-					if e2, ok := err.(*Erf); ok {
-						buf.WriteRune('\n')
-						buf.WriteString(e2.Error())
-						buf.WriteRune('\n')
-						buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
-						buf.WriteRune('\n')
-					}
-					if wErr, ok := err.(WrappedError); ok {
-						err = wErr.Unwrap()
-					} else {
-						err = nil
-					}
+				if wErr, ok := err.(WrappedError); ok {
+					err = wErr.Unwrap()
+				} else {
+					err = nil
 				}
 			}
 		}
