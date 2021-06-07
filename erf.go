@@ -167,7 +167,7 @@ func (e *Erf) StackTrace() *StackTrace {
 }
 
 func (e *Erf) initialize(skip int) {
-	e.pc = getPC(int(4096/unsafe.Sizeof(uintptr(0))), skip)
+	e.pc = PC(int(4096/unsafe.Sizeof(uintptr(0))), skip)
 }
 
 // New creates a new Erf object with the given text.
