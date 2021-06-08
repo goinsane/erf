@@ -70,15 +70,17 @@ func NewStackTrace(pc ...uintptr) *StackTrace {
 		callers: make([]StackCaller, 0, len(pc)),
 	}
 	copy(t.pc, pc)
-	frames := runtime.CallersFrames(t.pc)
-	for {
-		frame, more := frames.Next()
-		caller := StackCaller{
-			Frame: frame,
-		}
-		t.callers = append(t.callers, caller)
-		if !more {
-			break
+	if len(t.pc) > 0 {
+		frames := runtime.CallersFrames(t.pc)
+		for {
+			frame, more := frames.Next()
+			caller := StackCaller{
+				Frame: frame,
+			}
+			t.callers = append(t.callers, caller)
+			if !more {
+				break
+			}
 		}
 	}
 	return t
