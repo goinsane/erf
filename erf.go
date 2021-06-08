@@ -114,7 +114,7 @@ func (e *Erf) Len() int {
 // Arg returns an argument value on the given index. It panics if index is out of range.
 func (e *Erf) Arg(index int) interface{} {
 	if index < 0 || index >= e.Len() {
-		panic("index is out of range")
+		panic("index out of range")
 	}
 	return e.args[index]
 }
@@ -146,7 +146,7 @@ func (e *Erf) Attach(tags ...string) *Erf {
 			continue
 		}
 		if _, ok := tagIndexes[tag]; ok {
-			panic("tag is already defined")
+			panic("tag already defined")
 		}
 		tagIndexes[tag] = index
 	}
@@ -161,7 +161,7 @@ func (e *Erf) Tag(tag string) interface{} {
 		index = idx
 	}
 	if index < 0 || index >= e.Len() {
-		panic("tag is not found")
+		panic("tag not found")
 	}
 	return e.args[index]
 }
