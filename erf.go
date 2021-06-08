@@ -9,6 +9,11 @@ import (
 	"unsafe"
 )
 
+var (
+	// DefaultPCSize defines max length of Erf program counters in PC() method.
+	DefaultPCSize = int(4096 / unsafe.Sizeof(uintptr(0)))
+)
+
 // Erf is an error type that wraps the underlying error that stores and formats the stack trace.
 type Erf struct {
 	err        error
@@ -129,9 +134,9 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	if e.args == nil {
 		panic("args are not using")
 	}
-	if e.tagIndexes != nil {
+	/*if e.tagIndexes != nil {
 		panic("tags are already attached")
-	}
+	}*/
 	if len(tags) > len(e.args) {
 		panic("tags are more than args")
 	}
@@ -174,7 +179,7 @@ func (e *Erf) StackTrace() *StackTrace {
 }
 
 func (e *Erf) initialize(skip int) {
-	e.pc = PC(int(4096/unsafe.Sizeof(uintptr(0))), skip)
+	e.pc = PC(DefaultPCSize, skip)
 }
 
 // New creates a new Erf object with the given text.
