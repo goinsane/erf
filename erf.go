@@ -59,8 +59,12 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 		}
 		format += fmt.Sprintf("%d.%d", wid, prec)
 		format += "s"
+		padding := bytes.Repeat([]byte{pad}, wid)
+		indent := bytes.Repeat([]byte{pad}, prec)
 		for _, line := range strings.Split(e.err.Error(), "\n") {
-			buf.WriteString(fmt.Sprintf("%s%s", strings.Repeat(string(pad), wid+prec), line))
+			buf.Write(padding)
+			buf.Write(indent)
+			buf.WriteString(line)
 			buf.WriteRune('\n')
 		}
 		buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
@@ -70,7 +74,9 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				if e2, ok := err.(*Erf); ok {
 					buf.WriteRune('\n')
 					for _, line := range strings.Split(e2.err.Error(), "\n") {
-						buf.WriteString(fmt.Sprintf("%s%s", strings.Repeat(string(pad), wid+prec), line))
+						buf.Write(padding)
+						buf.Write(indent)
+						buf.WriteString(line)
 						buf.WriteRune('\n')
 					}
 					buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))

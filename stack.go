@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"runtime"
-	"strings"
 )
 
 // StackCaller stores the information of stack caller.
@@ -34,6 +33,7 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 			prec = p
 		}
 		padding := bytes.Repeat([]byte{pad}, wid)
+		indent := bytes.Repeat([]byte{pad}, prec)
 		var str string
 		buf.Write(padding)
 		str = "???"
@@ -44,11 +44,12 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 		if f.Flag('+') {
 			buf.WriteRune('\n')
 			buf.Write(padding)
+			buf.Write(indent)
 			str = trimSrcPath(c.File)
 			if f.Flag('#') {
 				str = trimDirs(str)
 			}
-			buf.WriteString(fmt.Sprintf("%s%s:%d +%#x", strings.Repeat(string(pad), prec), str, c.Line, c.PC-c.Entry))
+			buf.WriteString(fmt.Sprintf("%s:%d +%#x", str, c.Line, c.PC-c.Entry))
 		}
 	}
 	if buf.Len() > 0 {
