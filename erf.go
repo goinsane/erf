@@ -134,9 +134,9 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	if e.args == nil {
 		panic("args are not using")
 	}
-	/*if e.tagIndexes != nil {
+	if e.tagIndexes != nil {
 		panic("tags are already attached")
-	}*/
+	}
 	if len(tags) > len(e.args) {
 		panic("tags are more than args")
 	}
