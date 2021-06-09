@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"runtime"
-	"strings"
 )
 
 // StackCaller stores the information of stack caller.
@@ -34,6 +33,7 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 			prec = p
 		}
 		padding := bytes.Repeat([]byte{pad}, wid)
+		indent := bytes.Repeat([]byte{pad}, prec)
 		var str string
 		buf.Write(padding)
 		str = "???"
@@ -44,11 +44,12 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 		if f.Flag('+') {
 			buf.WriteRune('\n')
 			buf.Write(padding)
+			buf.Write(indent)
 			str = trimSrcPath(c.File)
 			if f.Flag('#') {
 				str = trimDirs(str)
 			}
-			buf.WriteString(fmt.Sprintf("%s%s:%d +%#x", strings.Repeat(string(pad), prec), str, c.Line, c.PC-c.Entry))
+			buf.WriteString(fmt.Sprintf("%s:%d +%#x", str, c.Line, c.PC-c.Entry))
 		}
 	}
 	if buf.Len() > 0 {
@@ -69,15 +70,17 @@ func NewStackTrace(pc ...uintptr) *StackTrace {
 		callers: make([]StackCaller, 0, len(pc)),
 	}
 	copy(t.pc, pc)
-	frames := runtime.CallersFrames(t.pc)
-	for {
-		frame, more := frames.Next()
-		caller := StackCaller{
-			Frame: frame,
-		}
-		t.callers = append(t.callers, caller)
-		if !more {
-			break
+	if len(t.pc) > 0 {
+		frames := runtime.CallersFrames(t.pc)
+		for {
+			frame, more := frames.Next()
+			caller := StackCaller{
+				Frame: frame,
+			}
+			t.callers = append(t.callers, caller)
+			if !more {
+				break
+			}
 		}
 	}
 	return t
@@ -147,7 +150,7 @@ func (t *StackTrace) Len() int {
 // Caller returns a StackCaller on the given index. It panics if index is out of range.
 func (t *StackTrace) Caller(index int) StackCaller {
 	if index < 0 || index >= t.Len() {
-		panic("index is out of range")
+		panic("index out of range")
 	}
 	return t.callers[index]
 }

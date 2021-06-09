@@ -5,7 +5,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 	"unsafe"
+)
+
+var (
+	// DefaultPCSize defines max length of Erf program counters in PC() method.
+	DefaultPCSize = int(4096 / unsafe.Sizeof(uintptr(0)))
 )
 
 // Erf is an error type that wraps the underlying error that stores and formats the stack trace.
@@ -35,46 +41,60 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(nil)
 	switch verb {
 	case 's', 'v':
-		buf.WriteString(e.err.Error())
-		if f.Flag('+') {
-			format := "%+"
-			for _, r := range []rune{'-', '#'} {
-				if f.Flag(int(r)) {
-					format += string(r)
+		if !f.Flag('+') {
+			buf.WriteString(e.err.Error())
+			break
+		}
+		format := "%+"
+		for _, r := range []rune{'-', '#'} {
+			if f.Flag(int(r)) {
+				format += string(r)
+			}
+		}
+		pad, wid, prec := byte('\t'), 0, 1
+		if f.Flag('-') {
+			pad = ' '
+			prec = 2
+		}
+		if w, ok := f.Width(); ok {
+			wid = w
+		}
+		if p, ok := f.Precision(); ok {
+			prec = p
+		}
+		format += fmt.Sprintf("%d.%d", wid, prec)
+		format += "s"
+		padding := bytes.Repeat([]byte{pad}, wid)
+		indent := bytes.Repeat([]byte{pad}, prec)
+		for _, line := range strings.Split(e.err.Error(), "\n") {
+			buf.Write(padding)
+			buf.Write(indent)
+			buf.WriteString(line)
+			buf.WriteRune('\n')
+		}
+		buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
+		buf.WriteRune('\n')
+		if !f.Flag('0') {
+			for err := e.Unwrap(); err != nil; {
+				if e2, ok := err.(*Erf); ok {
+					buf.WriteRune('\n')
+					for _, line := range strings.Split(e2.err.Error(), "\n") {
+						buf.Write(padding)
+						buf.Write(indent)
+						buf.WriteString(line)
+						buf.WriteRune('\n')
+					}
+					buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
+					buf.WriteRune('\n')
 				}
-			}
-			wid, prec := 1, 1
-			if f.Flag('-') {
-				wid, prec = 2, 2
-			}
-			if w, ok := f.Width(); ok {
-				wid = w
-			}
-			if p, ok := f.Precision(); ok {
-				prec = p
-			}
-			format += fmt.Sprintf("%d.%d", wid, prec)
-			format += "s"
-			buf.WriteRune('\n')
-			buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
-			buf.WriteRune('\n')
-			if !f.Flag('0') {
-				for err := e.Unwrap(); err != nil; {
-					if e2, ok := err.(*Erf); ok {
-						buf.WriteRune('\n')
-						buf.WriteString(e2.Error())
-						buf.WriteRune('\n')
-						buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
-						buf.WriteRune('\n')
-					}
-					if wErr, ok := err.(WrappedError); ok {
-						err = wErr.Unwrap()
-					} else {
-						err = nil
-					}
+				if wErr, ok := err.(WrappedError); ok {
+					err = wErr.Unwrap()
+				} else {
+					err = nil
 				}
 			}
 		}
+		buf.WriteRune('\n')
 	}
 	if buf.Len() > 0 {
 		_, _ = f.Write(buf.Bytes())
@@ -94,7 +114,7 @@ func (e *Erf) Len() int {
 // Arg returns an argument value on the given index. It panics if index is out of range.
 func (e *Erf) Arg(index int) interface{} {
 	if index < 0 || index >= e.Len() {
-		panic("index is out of range")
+		panic("index out of range")
 	}
 	return e.args[index]
 }
@@ -122,8 +142,11 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	}
 	tagIndexes := make(map[string]int, len(tags))
 	for index, tag := range tags {
+		if tag == "" {
+			continue
+		}
 		if _, ok := tagIndexes[tag]; ok {
-			panic("tag is already defined")
+			panic("tag already defined")
 		}
 		tagIndexes[tag] = index
 	}
@@ -138,7 +161,7 @@ func (e *Erf) Tag(tag string) interface{} {
 		index = idx
 	}
 	if index < 0 || index >= e.Len() {
-		panic("tag is not found")
+		panic("tag not found")
 	}
 	return e.args[index]
 }
@@ -156,7 +179,7 @@ func (e *Erf) StackTrace() *StackTrace {
 }
 
 func (e *Erf) initialize(skip int) {
-	e.pc = getPC(int(4096/unsafe.Sizeof(uintptr(0))), skip)
+	e.pc = PC(DefaultPCSize, skip)
 }
 
 // New creates a new Erf object with the given text.

@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// PC returns program counters by using runtime.Callers.
+func PC(size, skip int) []uintptr {
+	pc := make([]uintptr, size)
+	pc = pc[:runtime.Callers(skip, pc)]
+	return pc
+}
+
 func trimSrcPath(s string) string {
 	var r string
 	r = strings.TrimPrefix(s, build.Default.GOROOT+"/src/")
@@ -27,10 +34,4 @@ func trimDirs(s string) string {
 		}
 	}
 	return s
-}
-
-func getPC(size, skip int) []uintptr {
-	pc := make([]uintptr, size)
-	pc = pc[:runtime.Callers(skip, pc)]
-	return pc
 }
