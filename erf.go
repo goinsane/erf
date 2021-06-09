@@ -154,14 +154,14 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	return e
 }
 
-// Tag returns an argument value on the given tag. It panics if tag is not found.
+// Tag returns an argument value on the given tag. It returns nil if tag is not found.
 func (e *Erf) Tag(tag string) interface{} {
 	index := -1
 	if idx, ok := e.tagIndexes[tag]; ok {
 		index = idx
 	}
 	if index < 0 || index >= e.Len() {
-		panic("tag not found")
+		return nil
 	}
 	return e.args[index]
 }
@@ -195,13 +195,19 @@ func newf(format string, args ...interface{}) *Erf {
 	e := &Erf{
 		err:    fmt.Errorf(format, args...),
 		format: format,
-		args:   make([]interface{}, len(args)),
+		args:   make([]interface{}, 0, len(args)),
 	}
-	copy(e.args, args)
+	for _, arg := range args {
+		if arg == nil {
+			panic("arg is nil")
+		}
+		e.args = append(e.args, arg)
+	}
 	return e
 }
 
 // Newf creates a new Erf object with the given format and args.
+// It panics if an arg is nil.
 func Newf(format string, args ...interface{}) *Erf {
 	e := newf(format, args...)
 	e.initialize(4)
@@ -216,6 +222,7 @@ func Errorf(format string, a ...interface{}) error {
 }
 
 // Wrap wraps the given error as the underlying error and returns a new Erf object as the error interface.
+// It panics if err is nil.
 func Wrap(err error) error {
 	e := newf("%w", err)
 	e.initialize(4)
