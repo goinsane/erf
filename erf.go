@@ -38,7 +38,7 @@ func (e *Erf) Unwrap() error {
 
 // Format is implementation of fmt.Formatter.
 func (e *Erf) Format(f fmt.State, verb rune) {
-	buf := bytes.NewBuffer(nil)
+	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
 	case 's', 'v':
 		if !f.Flag('+') {
@@ -95,10 +95,10 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 			}
 		}
 		buf.WriteRune('\n')
+	default:
+		return
 	}
-	if buf.Len() > 0 {
-		_, _ = f.Write(buf.Bytes())
-	}
+	_, _ = f.Write(buf.Bytes())
 }
 
 // Fmt returns the format argument of the formatting functions (Newf, Errorf or Wrap) that created Erf.

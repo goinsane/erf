@@ -18,7 +18,7 @@ func (c StackCaller) String() string {
 
 // Format is implementation of fmt.Formatter.
 func (c StackCaller) Format(f fmt.State, verb rune) {
-	buf := bytes.NewBuffer(nil)
+	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
 	case 's', 'v':
 		pad, wid, prec := byte('\t'), 0, 1
@@ -34,27 +34,32 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 		}
 		padding := bytes.Repeat([]byte{pad}, wid)
 		indent := bytes.Repeat([]byte{pad}, prec)
-		var str string
 		buf.Write(padding)
-		str = "???"
+		fn := "???"
 		if c.Function != "" {
-			str = trimSrcPath(c.Function)
+			fn = trimSrcPath(c.Function)
 		}
-		buf.WriteString(fmt.Sprintf("%s(%#x)", str, c.Entry))
+		buf.WriteString(fmt.Sprintf("%s(%#x)", fn, c.Entry))
 		if f.Flag('+') {
 			buf.WriteRune('\n')
 			buf.Write(padding)
 			buf.Write(indent)
-			str = trimSrcPath(c.File)
-			if f.Flag('#') {
-				str = trimDirs(str)
+			file, line := "???", 0
+			if c.File != "" {
+				file = trimSrcPath(c.File)
+				if f.Flag('#') {
+					file = trimDirs(file)
+				}
 			}
-			buf.WriteString(fmt.Sprintf("%s:%d +%#x", str, c.Line, c.PC-c.Entry))
+			if c.Line > 0 {
+				line = c.Line
+			}
+			buf.WriteString(fmt.Sprintf("%s:%d +%#x", file, line, c.PC-c.Entry))
 		}
+	default:
+		return
 	}
-	if buf.Len() > 0 {
-		_, _ = f.Write(buf.Bytes())
-	}
+	_, _ = f.Write(buf.Bytes())
 }
 
 // StackTrace stores the information of stack trace.
@@ -107,7 +112,7 @@ func (t *StackTrace) String() string {
 
 // Format is implementation of fmt.Formatter.
 func (t *StackTrace) Format(f fmt.State, verb rune) {
-	buf := bytes.NewBuffer(nil)
+	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
 	case 's', 'v':
 		format := "%"
@@ -129,10 +134,10 @@ func (t *StackTrace) Format(f fmt.State, verb rune) {
 			}
 			buf.WriteString(fmt.Sprintf(format, c))
 		}
+	default:
+		return
 	}
-	if buf.Len() > 0 {
-		_, _ = f.Write(buf.Bytes())
-	}
+	_, _ = f.Write(buf.Bytes())
 }
 
 // PC returns program counters.
