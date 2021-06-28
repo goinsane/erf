@@ -4,4 +4,10 @@
 
 Package erf provides error management with stack trace.
 Erf is an error type that wraps the underlying error that stores and formats the stack trace.
-Please see [godoc](https://pkg.go.dev/github.com/goinsane/erf) and [examples](https://github.com/goinsane/erf/tree/master/examples).
+Please see [godoc](https://pkg.go.dev/github.com/goinsane/erf).
+
+## Examples
+
+To run any example, please use the command like the following:
+
+> go run examples/example1.go
