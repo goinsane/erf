@@ -3,16 +3,8 @@ package erf
 import (
 	"go/build"
 	"os"
-	"runtime"
 	"strings"
 )
-
-// PC returns program counters by using runtime.Callers.
-func PC(size, skip int) []uintptr {
-	pc := make([]uintptr, size)
-	pc = pc[:runtime.Callers(skip, pc)]
-	return pc
-}
 
 func trimSrcPath(s string) string {
 	var r string
