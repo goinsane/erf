@@ -7,16 +7,28 @@ import (
 )
 
 // StackCaller stores the information of stack caller.
+// StackCaller can format given information as string by using Format or String methods.
 type StackCaller struct {
 	runtime.Frame
 }
 
 // String is implementation of fmt.Stringer.
+// It is synonym with fmt.Sprintf("%s", c).
 func (c StackCaller) String() string {
 	return fmt.Sprintf("%s", c)
 }
 
 // Format is implementation of fmt.Formatter.
+//
+// For '%s' (also '%v'):
+// 	%s       just show function and entry (default: padding char '\t', padding 0, indent 1)
+// 	%+s      show file path, line and pc
+// 	%#s      use file name as file path
+// 	%-s      use ' ' as padding char (padding 0, indent 2)
+// 	%4s      padding 4, default indent
+// 	%.3s     default padding, indent 3
+// 	%4.3s    padding 4, indent 3
+// 	%4.s     padding 4, indent 0
 func (c StackCaller) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
@@ -106,11 +118,13 @@ func (t *StackTrace) Duplicate() *StackTrace {
 }
 
 // String is implementation of fmt.Stringer.
+// It is synonym with fmt.Sprintf("%s", t).
 func (t *StackTrace) String() string {
 	return fmt.Sprintf("%s", t)
 }
 
 // Format is implementation of fmt.Formatter.
+// Format lists all StackCaller's in StackTrace line by line with given format.
 func (t *StackTrace) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
