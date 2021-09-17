@@ -118,7 +118,7 @@ func (t *StackTrace) Duplicate() *StackTrace {
 }
 
 // String is implementation of fmt.Stringer.
-// It is synonym with fmt.Sprintf("%s", c).
+// It is synonym with fmt.Sprintf("%s", t).
 func (t *StackTrace) String() string {
 	return fmt.Sprintf("%s", t)
 }
