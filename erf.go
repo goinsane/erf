@@ -222,8 +222,11 @@ func Errorf(format string, a ...interface{}) error {
 }
 
 // Wrap wraps the given error as the underlying error and returns a new Erf object as the error interface.
-// It panics if err is nil.
+// Wrap is similar with Newf("%w", err) except that it returns nil if err is nil.
 func Wrap(err error) error {
+	if err == nil {
+		return nil
+	}
 	e := newf("%w", err)
 	e.initialize(4)
 	return e
