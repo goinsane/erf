@@ -37,7 +37,7 @@ func ExampleStackCaller() {
 	fmt.Println("padding 2, indent 3")
 	fmt.Printf("%+#2.3s\n\n", sc)
 
-	fmt.Println("use ' ' as padding char (default: padding 0, indent 2)")
+	fmt.Println("use ' ' as padding char (padding 0, indent 2)")
 	fmt.Printf("%-s\n\n", sc)
 
 	fmt.Println("show file path, line and pc")
