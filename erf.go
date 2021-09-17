@@ -37,6 +37,18 @@ func (e *Erf) Unwrap() error {
 }
 
 // Format is implementation of fmt.Formatter.
+// Format lists all StackTrace's line by line with given format.
+//
+// For '%s' (also '%v'):
+// 	%s       just show first error message (default: padding char '\t', padding 0, indent 1)
+// 	%+s      show error message with indent, append stack trace using format '%+s'
+// 	%#s      use file name as file path for StackCaller
+// 	%-s      use ' ' as padding char (padding 0, indent 2)
+// 	%0s      show only first error even verb '+' was given
+// 	%4s      padding 4, default indent
+// 	%.3s     default padding, indent 3
+// 	%4.3s    padding 4, indent 3
+// 	%4.s     padding 4, indent 0
 func (e *Erf) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
@@ -129,7 +141,12 @@ func (e *Erf) Args() []interface{} {
 	return result
 }
 
-// Attach attaches tags to arguments, if arguments are given. It panics if an error occurs.
+// Attach attaches tags to arguments, if arguments are given.
+// It panics for given errors:
+// 	args are not using
+// 	tags are already attached
+// 	tags are more than args
+// 	tag already defined
 func (e *Erf) Attach(tags ...string) *Erf {
 	if e.args == nil {
 		panic("args are not using")
@@ -207,7 +224,7 @@ func newf(format string, args ...interface{}) *Erf {
 }
 
 // Newf creates a new Erf object with the given format and args.
-// It panics if an arg is nil.
+// It panics if an any arg is nil.
 func Newf(format string, args ...interface{}) *Erf {
 	e := newf(format, args...)
 	e.initialize(4)
