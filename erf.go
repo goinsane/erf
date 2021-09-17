@@ -145,7 +145,7 @@ func (e *Erf) Args() []interface{} {
 // It panics for given errors:
 // 	args are not using
 // 	tags are already attached
-// 	tags are more than args
+// 	number of tags is more than args
 // 	tag already defined
 func (e *Erf) Attach(tags ...string) *Erf {
 	if e.args == nil {
@@ -155,7 +155,7 @@ func (e *Erf) Attach(tags ...string) *Erf {
 		panic("tags are already attached")
 	}
 	if len(tags) > len(e.args) {
-		panic("tags are more than args")
+		panic("number of tags is more than args")
 	}
 	tagIndexes := make(map[string]int, len(tags))
 	for index, tag := range tags {
