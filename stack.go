@@ -124,7 +124,7 @@ func (t *StackTrace) String() string {
 }
 
 // Format is implementation of fmt.Formatter.
-// Format lists StackCaller's line by line with given format.
+// Format lists all StackCaller's in StackTrace line by line with given format.
 func (t *StackTrace) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {

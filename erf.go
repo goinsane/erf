@@ -37,7 +37,7 @@ func (e *Erf) Unwrap() error {
 }
 
 // Format is implementation of fmt.Formatter.
-// Format lists all StackTrace's line by line with given format.
+// Format formats error message and lists all StackTrace's line by line with given format.
 //
 // For '%s' (also '%v'):
 // 	%s       just show first error message (default: padding char '\t', padding 0, indent 1)
