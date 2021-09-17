@@ -45,6 +45,7 @@ func (e *Erf) Unwrap() error {
 // 	%#s      use file name as file path for StackCaller
 // 	%-s      use ' ' as padding char (padding 0, indent 2)
 // 	%0s      show only first error even verb '+' was given
+// 	% s      exact with %0s
 // 	%4s      padding 4, default indent
 // 	%.3s     default padding, indent 3
 // 	%4.3s    padding 4, indent 3
@@ -86,7 +87,7 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 		}
 		buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
 		buf.WriteRune('\n')
-		if !f.Flag('0') {
+		if !f.Flag('0') && !f.Flag(' ') {
 			for err := e.Unwrap(); err != nil; {
 				if e2, ok := err.(*Erf); ok {
 					buf.WriteRune('\n')
