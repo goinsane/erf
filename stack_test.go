@@ -26,16 +26,16 @@ func ExampleStackCaller() {
 	fmt.Printf("%#2.3s\n\n", sc)
 
 	fmt.Println("show file path, line and pc. padding char ' ', default padding 0, default indent 2.")
-	fmt.Printf("%-s\n\n", sc)
+	fmt.Printf("% s\n\n", sc)
 
 	fmt.Println("use file name as file path.")
-	fmt.Printf("%-#s\n\n", sc)
+	fmt.Printf("% #s\n\n", sc)
 
 	fmt.Println("padding 2, indent 2 by default.")
-	fmt.Printf("%-#2s\n\n", sc)
+	fmt.Printf("% #2s\n\n", sc)
 
 	fmt.Println("padding 2, indent 3.")
-	fmt.Printf("%-#2.3s\n\n", sc)
+	fmt.Printf("% #2.3s\n\n", sc)
 }
 
 func ExampleStackTrace() {
@@ -49,5 +49,5 @@ func ExampleStackTrace() {
 	fmt.Printf("%+s\n\n", st)
 
 	fmt.Println("show file path, line and pc. padding char ' ', default padding 0, default indent 2.")
-	fmt.Printf("%-s\n\n", st)
+	fmt.Printf("% s\n\n", st)
 }

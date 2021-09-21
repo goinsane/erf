@@ -23,20 +23,20 @@ func (c StackCaller) String() string {
 // For '%s' (also '%v'):
 // 	%s       just show function and entry without padding and indent.
 // 	%+s      show file path, line and pc. padding char '\t', default padding 0, default indent 1.
-// 	%-s      show file path, line and pc. padding char ' ', default padding 0, default indent 2.
+// 	% s      show file path, line and pc. padding char ' ', default padding 0, default indent 2.
 // 	%#s      same with '%+s', use file name as file path.
 // 	%+#s     exact with '%#s'.
-// 	%-#s     same with '%-s', use file name as file path.
+// 	% #s     same with '% s', use file name as file path.
 // 	%+4s     same with '%+s', padding 4, indent 1 by default.
 // 	%+.3s    same with '%+s', padding 0 by default, indent 3.
 // 	%+4.3s   same with '%+s', padding 4, indent 3.
 // 	%+4.s    same with '%+s', padding 4, indent 0.
-// 	%-4s     same with '%-s', padding 4, indent 2 by default.
-// 	%-.3s    same with '%-s', padding 0 by default, indent 3.
-// 	%-4.3s   same with '%-s', padding 4, indent 3.
-// 	%-4.s    same with '%-s', padding 4, indent 0.
+// 	% 4s     same with '% s', padding 4, indent 2 by default.
+// 	% .3s    same with '% s', padding 0 by default, indent 3.
+// 	% 4.3s   same with '% s', padding 4, indent 3.
+// 	% 4.s    same with '% s', padding 4, indent 0.
 // 	%#4.3s   same with '%#s', padding 4, indent 3.
-// 	%-#4.3s  same with '%-#s', padding 4, indent 3.
+// 	% #4.3s  same with '% #s', padding 4, indent 3.
 func (c StackCaller) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
@@ -45,13 +45,13 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 		if c.Function != "" {
 			fn = trimSrcPath(c.Function)
 		}
-		extended := f.Flag('+') || f.Flag('-') || f.Flag('#')
+		extended := f.Flag('+') || f.Flag(' ') || f.Flag('#')
 		if !extended {
 			buf.WriteString(fmt.Sprintf("%s(%#x)", fn, c.Entry))
 			break
 		}
 		pad, wid, prec := byte('\t'), 0, 1
-		if f.Flag('-') {
+		if f.Flag(' ') {
 			pad = ' '
 			prec = 2
 		}
@@ -141,7 +141,7 @@ func (t *StackTrace) Format(f fmt.State, verb rune) {
 	switch verb {
 	case 's', 'v':
 		format := "%"
-		for _, r := range []rune{'+', '-', '#'} {
+		for _, r := range []rune{'+', ' ', '#'} {
 			if f.Flag(int(r)) {
 				format += string(r)
 			}
