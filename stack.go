@@ -21,18 +21,35 @@ func (c StackCaller) String() string {
 // Format is implementation of fmt.Formatter.
 //
 // For '%s' (also '%v'):
-// 	%s       just show function and entry (default: padding char '\t', padding 0, indent 1)
-// 	%+s      show file path, line and pc
-// 	%#s      use file name as file path
-// 	%-s      use ' ' as padding char (padding 0, indent 2)
-// 	%4s      padding 4, default indent
-// 	%.3s     default padding, indent 3
-// 	%4.3s    padding 4, indent 3
-// 	%4.s     padding 4, indent 0
+// 	%s       just show function and entry without padding and indent.
+// 	%+s      show file path, line and pc. padding char '\t', default padding 0, default indent 1.
+// 	%-s      show file path, line and pc. padding char ' ', default padding 0, default indent 2.
+// 	%#s      same with '%+s', use file name as file path.
+// 	%+#s     exact with '%#s'.
+// 	%-#s     same with '%-s', use file name as file path.
+// 	%+4s     same with '%+s', padding 4, indent 1 by default.
+// 	%+.3s    same with '%+s', padding 0 by default, indent 3.
+// 	%+4.3s   same with '%+s', padding 4, indent 3.
+// 	%+4.s    same with '%+s', padding 4, indent 0.
+// 	%-4s     same with '%-s', padding 4, indent 2 by default.
+// 	%-.3s    same with '%-s', padding 0 by default, indent 3.
+// 	%-4.3s   same with '%-s', padding 4, indent 3.
+// 	%-4.s    same with '%-s', padding 4, indent 0.
+// 	%#4.3s   same with '%#s', padding 4, indent 3.
+// 	%-#4.3s  same with '%-#s', padding 4, indent 3.
 func (c StackCaller) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
 	case 's', 'v':
+		fn := "???"
+		if c.Function != "" {
+			fn = trimSrcPath(c.Function)
+		}
+		extended := f.Flag('+') || f.Flag('-') || f.Flag('#')
+		if !extended {
+			buf.WriteString(fmt.Sprintf("%s(%#x)", fn, c.Entry))
+			break
+		}
 		pad, wid, prec := byte('\t'), 0, 1
 		if f.Flag('-') {
 			pad = ' '
@@ -47,27 +64,21 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 		padding := bytes.Repeat([]byte{pad}, wid)
 		indent := bytes.Repeat([]byte{pad}, prec)
 		buf.Write(padding)
-		fn := "???"
-		if c.Function != "" {
-			fn = trimSrcPath(c.Function)
-		}
 		buf.WriteString(fmt.Sprintf("%s(%#x)", fn, c.Entry))
-		if f.Flag('+') {
-			buf.WriteRune('\n')
-			buf.Write(padding)
-			buf.Write(indent)
-			file, line := "???", 0
-			if c.File != "" {
-				file = trimSrcPath(c.File)
-				if f.Flag('#') {
-					file = trimDirs(file)
-				}
+		buf.WriteRune('\n')
+		buf.Write(padding)
+		buf.Write(indent)
+		file, line := "???", 0
+		if c.File != "" {
+			file = trimSrcPath(c.File)
+			if f.Flag('#') {
+				file = trimDirs(file)
 			}
-			if c.Line > 0 {
-				line = c.Line
-			}
-			buf.WriteString(fmt.Sprintf("%s:%d +%#x", file, line, c.PC-c.Entry))
 		}
+		if c.Line > 0 {
+			line = c.Line
+		}
+		buf.WriteString(fmt.Sprintf("%s:%d +%#x", file, line, c.PC-c.Entry))
 	default:
 		return
 	}
