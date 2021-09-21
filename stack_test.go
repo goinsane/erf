@@ -49,5 +49,5 @@ func ExampleStackTrace() {
 	fmt.Printf("%+s\n\n", st)
 
 	fmt.Println("show file path, line and pc. padding char ' ', default padding 0, default indent 2.")
-	fmt.Printf("%+s\n\n", st)
+	fmt.Printf("%-s\n\n", st)
 }
