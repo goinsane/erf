@@ -40,43 +40,53 @@ func Baz(z int) error {
 }
 
 func main() {
-	fmt.Println("#### Foo: just show error text")
+	fmt.Println("#### Foo: just the show first error message without padding and indent")
 	if err := Foo(-1); err != nil {
 		fmt.Printf("%v\n", err)
 	}
 
 	fmt.Println("#### Foo: show with stack trace")
 	if err := Foo(-2); err != nil {
-		fmt.Printf("%+v\n", err)
+		fmt.Printf("%x\n", err)
 	}
 
 	fmt.Println("#### Foo: show with stack trace, and use space as whitespace instead of tab")
 	if err := Foo(-3); err != nil {
-		fmt.Printf("%+-v\n", err)
+		fmt.Printf("% x\n", err)
 	}
 
-	fmt.Println("#### Foo: show with last stack trace")
+	fmt.Println("#### Foo: show with first stack trace")
 	if err := Foo(-4); err != nil {
-		fmt.Printf("%+0v\n", err)
+		fmt.Printf("%X\n", err)
 	}
 
 	fmt.Println("#### Foo: show with stack trace with only file names except full path")
 	if err := Foo(-5); err != nil {
-		fmt.Printf("%+#v\n", err)
+		fmt.Printf("%#x\n", err)
 	}
 
 	fmt.Println("#### Foo: show with stack trace with 2 whitespace chars of padding and 1 whitespace char of indent")
 	if err := Foo(-6); err != nil {
-		fmt.Printf("%+2.1v\n", err)
+		fmt.Printf("%2.1x\n", err)
 	}
 
 	fmt.Println("#### Bar: show with stack trace")
 	if err := Bar(-7); err != nil {
-		fmt.Printf("%+v\n", err)
+		fmt.Printf("%x\n", err)
 	}
 
 	fmt.Println("#### Baz: show with stack trace")
 	if err := Baz(-8); err != nil {
-		fmt.Printf("%+v\n", err)
+		fmt.Printf("%x\n", err)
+	}
+
+	fmt.Println("#### Baz: just show all of stack traces of errors")
+	if err := Baz(-9); err != nil {
+		fmt.Printf("%-x\n", err)
+	}
+
+	fmt.Println("#### Baz: just show the stack trace of the first error")
+	if err := Baz(-10); err != nil {
+		fmt.Printf("%-X\n", err)
 	}
 }
