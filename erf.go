@@ -37,35 +37,47 @@ func (e *Erf) Unwrap() error {
 }
 
 // Format is implementation of fmt.Formatter.
-// Format formats error message and lists all StackTrace's line by line with given format.
+// Format lists error messages and appends StackTrace's for underlying Erf and all of wrapped Erf's,
+// line by line with given format.
 //
-// For '%s' (also '%v'):
-// 	%s       just show first error message (default: padding char '\t', padding 0, indent 1)
-// 	%+s      show error message with indent, append stack trace using format '%+s'
-// 	%#s      use file name as file path for StackCaller
-// 	%-s      use ' ' as padding char (padding 0, indent 2)
-// 	%0s      show only first error even verb '+' was given
-// 	% s      exact with %0s
-// 	%4s      padding 4, default indent
-// 	%.3s     default padding, indent 3
-// 	%4.3s    padding 4, indent 3
-// 	%4.s     padding 4, indent 0
+// For '%v' (also '%s'):
+// 	%v       just show the first error message without padding and indent.
+//
+// For '%x' and '%X':
+// 	%x       list all error messages by using indent and show StackTrace of errors by using format '%+s'.
+// 	% x      list all error messages by using indent and show StackTrace of errors by using format '% s'.
+// 	%#x      list all error messages by using indent and show StackTrace of errors by using format '%#s'.
+// 	% #x     list all error messages by using indent and show StackTrace of errors by using format '% #s'.
+// 	%X       show the first error message by using indent and show the StackTrace of error by using format '%+s'.
+// 	% X      show the first error message by using indent and show the StackTrace of error by using format '% s'.
+// 	%#X      show the first error message by using indent and show the StackTrace of error by using format '%#s'.
+// 	% #X     show the first error message by using indent and show the StackTrace of error by using format '% #s'.
+// 	%-x      don't show any error messages, just show all of StackTrace of errors.
+// 	%-X      don't show the error message, just show the StackTrace of the first error.
+// 	%4x      same with '%x', padding 4, indent 1 by default.
+// 	%.3x     same with '%x', padding 0 by default, indent 3.
+// 	%4.3x    same with '%x', padding 4, indent 3.
+// 	%4.x     same with '%x', padding 4, indent 0.
+// 	% 4x     same with '% x', padding 4, indent 2 by default.
+// 	% .3x    same with '% x', padding 0 by default, indent 3.
+// 	% 4.3x   same with '% x', padding 4, indent 3.
+// 	% 4.x    same with '% x', padding 4, indent 0.
+// 	%#4.3x   same with '%#x', padding 4, indent 3.
+// 	% #4.3x  same with '% #x', padding 4, indent 3.
 func (e *Erf) Format(f fmt.State, verb rune) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4096))
 	switch verb {
 	case 's', 'v':
-		if !f.Flag('+') {
-			buf.WriteString(e.err.Error())
-			break
-		}
+		buf.WriteString(e.err.Error())
+	case 'x', 'X':
 		format := "%+"
-		for _, r := range []rune{'-', '#'} {
+		for _, r := range []rune{' ', '#'} {
 			if f.Flag(int(r)) {
 				format += string(r)
 			}
 		}
 		pad, wid, prec := byte('\t'), 0, 1
-		if f.Flag('-') {
+		if f.Flag(' ') {
 			pad = ' '
 			prec = 2
 		}
@@ -79,35 +91,33 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 		format += "s"
 		padding := bytes.Repeat([]byte{pad}, wid)
 		indent := bytes.Repeat([]byte{pad}, prec)
-		for _, line := range strings.Split(e.err.Error(), "\n") {
-			buf.Write(padding)
-			buf.Write(indent)
-			buf.WriteString(line)
-			buf.WriteRune('\n')
-		}
-		buf.WriteString(fmt.Sprintf(format, e.StackTrace()))
-		buf.WriteRune('\n')
-		if !f.Flag('0') && !f.Flag(' ') {
-			for err := e.Unwrap(); err != nil; {
-				if e2, ok := err.(*Erf); ok {
+		count := 0
+		for err := error(e); err != nil; {
+			if e2, ok := err.(*Erf); ok {
+				if count > 0 {
 					buf.WriteRune('\n')
+				}
+				count++
+				if !f.Flag('-') {
 					for _, line := range strings.Split(e2.err.Error(), "\n") {
 						buf.Write(padding)
 						buf.Write(indent)
 						buf.WriteString(line)
 						buf.WriteRune('\n')
 					}
-					buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
-					buf.WriteRune('\n')
 				}
-				if wErr, ok := err.(WrappedError); ok {
-					err = wErr.Unwrap()
-				} else {
-					err = nil
+				buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
+				buf.WriteRune('\n')
+				if verb == 'X' {
+					break
 				}
 			}
+			if wErr, ok := err.(WrappedError); ok {
+				err = wErr.Unwrap()
+			} else {
+				err = nil
+			}
 		}
-		buf.WriteRune('\n')
 	default:
 		return
 	}
