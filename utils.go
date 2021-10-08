@@ -1,6 +1,7 @@
 package erf
 
 import (
+	"fmt"
 	"go/build"
 	"os"
 	"strings"
@@ -26,4 +27,19 @@ func trimDirs(s string) string {
 		}
 	}
 	return s
+}
+
+func getPadWidPrec(f fmt.State) (pad byte, wid, prec int) {
+	pad, wid, prec = byte('\t'), 0, 1
+	if f.Flag(' ') {
+		pad = ' '
+		prec = 2
+	}
+	if w, ok := f.Width(); ok {
+		wid = w
+	}
+	if p, ok := f.Precision(); ok {
+		prec = p
+	}
+	return
 }
