@@ -50,19 +50,8 @@ func (c StackCaller) Format(f fmt.State, verb rune) {
 			buf.WriteString(fmt.Sprintf("%s(%#x)", fn, c.Entry))
 			break
 		}
-		pad, wid, prec := byte('\t'), 0, 1
-		if f.Flag(' ') {
-			pad = ' '
-			prec = 2
-		}
-		if w, ok := f.Width(); ok {
-			wid = w
-		}
-		if p, ok := f.Precision(); ok {
-			prec = p
-		}
-		padding := bytes.Repeat([]byte{pad}, wid)
-		indent := bytes.Repeat([]byte{pad}, prec)
+		pad, wid, prec := getPadWidPrec(f)
+		padding, indent := bytes.Repeat([]byte{pad}, wid), bytes.Repeat([]byte{pad}, prec)
 		buf.Write(padding)
 		buf.WriteString(fmt.Sprintf("%s(%#x)", fn, c.Entry))
 		buf.WriteRune('\n')
@@ -146,13 +135,8 @@ func (t *StackTrace) Format(f fmt.State, verb rune) {
 				format += string(r)
 			}
 		}
-		if w, ok := f.Width(); ok {
-			format += fmt.Sprintf("%d", w)
-		}
-		if p, ok := f.Precision(); ok {
-			format += fmt.Sprintf(".%d", p)
-		}
-		format += "s"
+		_, wid, prec := getPadWidPrec(f)
+		format += fmt.Sprintf("%d.%ds", wid, prec)
 		for i, c := range t.callers {
 			if i > 0 {
 				buf.WriteRune('\n')

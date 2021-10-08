@@ -65,7 +65,7 @@ func main() {
 		fmt.Printf("%#x\n", err)
 	}
 
-	fmt.Println("#### Foo: show with stack trace with 2 whitespace chars of padding and 1 whitespace char of indent")
+	fmt.Println("#### Foo: show with stack trace (padding 2, indent 1)")
 	if err := Foo(-6); err != nil {
 		fmt.Printf("%2.1x\n", err)
 	}
@@ -75,18 +75,24 @@ func main() {
 		fmt.Printf("%x\n", err)
 	}
 
+	fmt.Println("#### Bar: show wrapped error with stack trace (padding 2, indent 1)")
+	if err := Foo(-8); err != nil {
+		err = erf.Wrap(err)
+		fmt.Printf("%2.1x\n", err)
+	}
+
 	fmt.Println("#### Baz: show with stack trace")
-	if err := Baz(-8); err != nil {
+	if err := Baz(-9); err != nil {
 		fmt.Printf("%x\n", err)
 	}
 
 	fmt.Println("#### Baz: just show all of stack traces of errors")
-	if err := Baz(-9); err != nil {
+	if err := Baz(-10); err != nil {
 		fmt.Printf("%-x\n", err)
 	}
 
 	fmt.Println("#### Baz: just show the stack trace of the first error")
-	if err := Baz(-10); err != nil {
+	if err := Baz(-11); err != nil {
 		fmt.Printf("%-X\n", err)
 	}
 }

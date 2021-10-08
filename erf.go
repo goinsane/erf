@@ -76,21 +76,9 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				format += string(r)
 			}
 		}
-		pad, wid, prec := byte('\t'), 0, 1
-		if f.Flag(' ') {
-			pad = ' '
-			prec = 2
-		}
-		if w, ok := f.Width(); ok {
-			wid = w
-		}
-		if p, ok := f.Precision(); ok {
-			prec = p
-		}
-		format += fmt.Sprintf("%d.%d", wid, prec)
-		format += "s"
-		padding := bytes.Repeat([]byte{pad}, wid)
-		indent := bytes.Repeat([]byte{pad}, prec)
+		pad, wid, prec := getPadWidPrec(f)
+		format += fmt.Sprintf("%d.%ds", wid, prec)
+		padding, indent := bytes.Repeat([]byte{pad}, wid), bytes.Repeat([]byte{pad}, prec)
 		count := 0
 		for err := error(e); err != nil; {
 			if e2, ok := err.(*Erf); ok {
@@ -108,6 +96,7 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				}
 				buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
 				buf.WriteRune('\n')
+				buf.Write(padding)
 				if verb == 'X' {
 					break
 				}
