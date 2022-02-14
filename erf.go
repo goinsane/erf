@@ -248,3 +248,18 @@ func Wrap(err error) error {
 	e.initialize(4)
 	return e
 }
+
+// Wrapp wraps the error in the given pointer and returns a new Erf object onto the given pointer.
+// Wrapp is similar with Newf("%w", err) except that it returns to perr and doesn't affect if perr or *perr is nil.
+func Wrapp(perr *error) {
+	if perr == nil {
+		return
+	}
+	err := *perr
+	if err == nil {
+		return
+	}
+	e := newf("%w", err)
+	e.initialize(4)
+	*perr = e
+}
