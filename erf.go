@@ -208,6 +208,11 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	return e
 }
 
+// Attach2 is similar with Attach except that it returns the error interface instead of the Erf pointer.
+func (e *Erf) Attach2(tags ...string) error {
+	return e.Attach(tags...)
+}
+
 // Tag returns an argument value on the given tag. It returns nil if tag is not found.
 func (e *Erf) Tag(tag string) interface{} {
 	index := -1
