@@ -179,6 +179,7 @@ func (e *Erf) Args() []interface{} {
 }
 
 // Attach attaches tags to arguments, if arguments are given.
+// If tag is "", it passes attaching tag to corresponding argument.
 // It panics for given errors:
 // 	args are not using
 // 	tags are already attached
