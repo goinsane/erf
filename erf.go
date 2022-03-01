@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"unsafe"
 )
 
 var (
 	// DefaultPCSize defines max length of Erf program counters in PC() method.
-	DefaultPCSize = int(4096 / unsafe.Sizeof(uintptr(0)))
+	DefaultPCSize = int(uintptr(os.Getpagesize()) / unsafe.Sizeof(uintptr(0)))
 )
 
 // Erf is an error type that wraps the underlying error that stores and formats the stack trace.
@@ -79,15 +80,15 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 		pad, wid, prec := getPadWidPrec(f)
 		format += fmt.Sprintf("%d.%ds", wid, prec)
 		padding, indent := bytes.Repeat([]byte{pad}, wid), bytes.Repeat([]byte{pad}, prec)
-		count := 0
+		newLine := false
 		for err := error(e); err != nil; {
+			if newLine {
+				buf.WriteRune('\n')
+			}
+			newLine = true
 			if e2, ok := err.(*Erf); ok {
-				if count > 0 {
-					buf.WriteRune('\n')
-				}
-				count++
 				if !f.Flag('-') {
-					for _, line := range strings.Split(e2.err.Error(), "\n") {
+					for _, line := range strings.Split(e2.Error(), "\n") {
 						buf.Write(padding)
 						buf.Write(indent)
 						buf.WriteString(line)
@@ -97,9 +98,21 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
 				buf.WriteRune('\n')
 				buf.Write(padding)
-				if verb == 'X' {
-					break
+			} else {
+				if !f.Flag('-') {
+					for _, line := range strings.Split(err.Error(), "\n") {
+						buf.Write(padding)
+						buf.Write(indent)
+						buf.WriteString(line)
+						buf.WriteRune('\n')
+					}
+					buf.Write(padding)
+				} else {
+					newLine = false
 				}
+			}
+			if verb == 'X' {
+				break
 			}
 			if wErr, ok := err.(WrappedError); ok {
 				err = wErr.Unwrap()
@@ -125,7 +138,7 @@ func (e *Erf) Len() int {
 
 // Arg returns an argument value on the given index. It panics if index is out of range.
 func (e *Erf) Arg(index int) interface{} {
-	if index < 0 || index >= e.Len() {
+	if index < 0 || index >= len(e.args) {
 		panic("index out of range")
 	}
 	return e.args[index]
@@ -177,7 +190,7 @@ func (e *Erf) Tag(tag string) interface{} {
 	if idx, ok := e.tagIndexes[tag]; ok {
 		index = idx
 	}
-	if index < 0 || index >= e.Len() {
+	if index < 0 || index >= len(e.args) {
 		return nil
 	}
 	return e.args[index]
