@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 	"unsafe"
 )
 
@@ -46,10 +47,12 @@ func (e *Erf) Unwrap() error {
 //
 // For '%x' and '%X':
 // 	%x       list all error messages by using indent and show StackTrace of errors by using format '%+s'.
+// 	%+x      similar with '%x', also shows tags.
 // 	% x      list all error messages by using indent and show StackTrace of errors by using format '% s'.
 // 	%#x      list all error messages by using indent and show StackTrace of errors by using format '%#s'.
 // 	% #x     list all error messages by using indent and show StackTrace of errors by using format '% #s'.
 // 	%X       show the first error message by using indent and show the StackTrace of error by using format '%+s'.
+// 	%+X      similar with '%X', also shows tags.
 // 	% X      show the first error message by using indent and show the StackTrace of error by using format '% s'.
 // 	%#X      show the first error message by using indent and show the StackTrace of error by using format '%#s'.
 // 	% #X     show the first error message by using indent and show the StackTrace of error by using format '% #s'.
@@ -97,6 +100,27 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				}
 				buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
 				buf.WriteRune('\n')
+				if f.Flag('+') {
+					tags := e2.Tags()
+					if len(tags) > 0 {
+						buf.Write(padding)
+						buf.WriteString("* ")
+						for idx, tag := range tags {
+							if idx > 0 {
+								buf.WriteRune(' ')
+							}
+							v := "s"
+							for _, r := range tag {
+								if unicode.IsSpace(r) || r == '"' || r == '\'' {
+									v = "q"
+									break
+								}
+							}
+							buf.WriteString(fmt.Sprintf("%"+v+"=%q", tag, fmt.Sprintf("%v", e2.Tag(tag))))
+						}
+						buf.WriteRune('\n')
+					}
+				}
 				buf.Write(padding)
 			} else {
 				if !f.Flag('-') {
