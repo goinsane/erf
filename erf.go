@@ -5,13 +5,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+	"unicode"
 	"unsafe"
 )
 
 var (
 	// DefaultPCSize defines max length of Erf program counters in PC() method.
-	DefaultPCSize = int(4096 / unsafe.Sizeof(uintptr(0)))
+	DefaultPCSize = int(uintptr(os.Getpagesize()) / unsafe.Sizeof(uintptr(0)))
 )
 
 // Erf is an error type that wraps the underlying error that stores and formats the stack trace.
@@ -45,10 +47,12 @@ func (e *Erf) Unwrap() error {
 //
 // For '%x' and '%X':
 // 	%x       list all error messages by using indent and show StackTrace of errors by using format '%+s'.
+// 	%+x      similar with '%x', also shows tags.
 // 	% x      list all error messages by using indent and show StackTrace of errors by using format '% s'.
 // 	%#x      list all error messages by using indent and show StackTrace of errors by using format '%#s'.
 // 	% #x     list all error messages by using indent and show StackTrace of errors by using format '% #s'.
 // 	%X       show the first error message by using indent and show the StackTrace of error by using format '%+s'.
+// 	%+X      similar with '%X', also shows tags.
 // 	% X      show the first error message by using indent and show the StackTrace of error by using format '% s'.
 // 	%#X      show the first error message by using indent and show the StackTrace of error by using format '%#s'.
 // 	% #X     show the first error message by using indent and show the StackTrace of error by using format '% #s'.
@@ -79,15 +83,15 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 		pad, wid, prec := getPadWidPrec(f)
 		format += fmt.Sprintf("%d.%ds", wid, prec)
 		padding, indent := bytes.Repeat([]byte{pad}, wid), bytes.Repeat([]byte{pad}, prec)
-		count := 0
+		newLine := false
 		for err := error(e); err != nil; {
+			if newLine {
+				buf.WriteRune('\n')
+			}
+			newLine = true
 			if e2, ok := err.(*Erf); ok {
-				if count > 0 {
-					buf.WriteRune('\n')
-				}
-				count++
 				if !f.Flag('-') {
-					for _, line := range strings.Split(e2.err.Error(), "\n") {
+					for _, line := range strings.Split(e2.Error(), "\n") {
 						buf.Write(padding)
 						buf.Write(indent)
 						buf.WriteString(line)
@@ -96,10 +100,43 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				}
 				buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
 				buf.WriteRune('\n')
-				buf.Write(padding)
-				if verb == 'X' {
-					break
+				if f.Flag('+') {
+					tags := e2.Tags()
+					if len(tags) > 0 {
+						buf.Write(padding)
+						buf.WriteString("* ")
+						for idx, tag := range tags {
+							if idx > 0 {
+								buf.WriteRune(' ')
+							}
+							v := "s"
+							for _, r := range tag {
+								if unicode.IsSpace(r) || r == '"' || r == '\'' {
+									v = "q"
+									break
+								}
+							}
+							buf.WriteString(fmt.Sprintf("%"+v+"=%q", tag, fmt.Sprintf("%v", e2.Tag(tag))))
+						}
+						buf.WriteRune('\n')
+					}
 				}
+				buf.Write(padding)
+			} else {
+				if !f.Flag('-') {
+					for _, line := range strings.Split(err.Error(), "\n") {
+						buf.Write(padding)
+						buf.Write(indent)
+						buf.WriteString(line)
+						buf.WriteRune('\n')
+					}
+					buf.Write(padding)
+				} else {
+					newLine = false
+				}
+			}
+			if verb == 'X' {
+				break
 			}
 			if wErr, ok := err.(WrappedError); ok {
 				err = wErr.Unwrap()
@@ -125,7 +162,7 @@ func (e *Erf) Len() int {
 
 // Arg returns an argument value on the given index. It panics if index is out of range.
 func (e *Erf) Arg(index int) interface{} {
-	if index < 0 || index >= e.Len() {
+	if index < 0 || index >= len(e.args) {
 		panic("index out of range")
 	}
 	return e.args[index]
@@ -142,6 +179,7 @@ func (e *Erf) Args() []interface{} {
 }
 
 // Attach attaches tags to arguments, if arguments are given.
+// If tag is "", it passes attaching tag to corresponding argument.
 // It panics for given errors:
 // 	args are not using
 // 	tags are already attached
@@ -171,16 +209,39 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	return e
 }
 
+// Attach2 is similar with Attach except that it returns the error interface instead of the Erf pointer.
+func (e *Erf) Attach2(tags ...string) error {
+	return e.Attach(tags...)
+}
+
 // Tag returns an argument value on the given tag. It returns nil if tag is not found.
 func (e *Erf) Tag(tag string) interface{} {
 	index := -1
 	if idx, ok := e.tagIndexes[tag]; ok {
 		index = idx
 	}
-	if index < 0 || index >= e.Len() {
+	if index < 0 || index >= len(e.args) {
 		return nil
 	}
 	return e.args[index]
+}
+
+// Tags returns all tags sequentially. It returns nil if tags are not attached.
+func (e *Erf) Tags() []string {
+	if e.tagIndexes == nil {
+		return nil
+	}
+	m := make(map[int]string, len(e.tagIndexes))
+	for tag, index := range e.tagIndexes {
+		m[index] = tag
+	}
+	result := make([]string, 0, len(m))
+	for i, j := 0, len(m); i < j; i++ {
+		if tag, ok := m[i]; ok {
+			result = append(result, tag)
+		}
+	}
+	return result
 }
 
 // PC returns program counters.
