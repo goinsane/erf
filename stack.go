@@ -24,6 +24,7 @@ func (c StackCaller) String() string {
 // 	%s       just show function and entry without padding and indent.
 // 	%+s      show file path, line and pc. padding char '\t', default padding 0, default indent 1.
 // 	% s      show file path, line and pc. padding char ' ', default padding 0, default indent 2.
+// 	%+ s     exact with '% s'.
 // 	%#s      same with '%+s', use file name as file path.
 // 	%+#s     exact with '%#s'.
 // 	% #s     same with '% s', use file name as file path.
