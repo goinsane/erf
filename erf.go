@@ -196,6 +196,24 @@ func (e *Erf) Tag(tag string) interface{} {
 	return e.args[index]
 }
 
+// Tags returns all tags sequentially. It returns nil if tags are not attached.
+func (e *Erf) Tags() []string {
+	if e.tagIndexes == nil {
+		return nil
+	}
+	m := make(map[int]string, len(e.tagIndexes))
+	for tag, index := range e.tagIndexes {
+		m[index] = tag
+	}
+	result := make([]string, 0, len(m))
+	for i, j := 0, len(m); i < j; i++ {
+		if tag, ok := m[i]; ok {
+			result = append(result, tag)
+		}
+	}
+	return result
+}
+
 // PC returns program counters.
 func (e *Erf) PC() []uintptr {
 	result := make([]uintptr, len(e.pc))
