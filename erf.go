@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"unicode"
 	"unsafe"
 )
 
@@ -21,8 +20,10 @@ type Erf struct {
 	err        error
 	format     string
 	args       []interface{}
+	tags       []string
 	tagIndexes map[string]int
 	pc         []uintptr
+	top        int
 }
 
 // Error is implementation of error.
@@ -36,6 +37,20 @@ func (e *Erf) Unwrap() error {
 		return err.Unwrap()
 	}
 	return nil
+}
+
+// UnwrapAll returns all errors using Unwrap method. The first element in the returned value is e.
+func (e *Erf) UnwrapAll() []error {
+	result := make([]error, 0, 4096)
+	for err := error(e); err != nil; {
+		result = append(result, err)
+		if wErr, ok := err.(WrappedError); ok {
+			err = wErr.Unwrap()
+		} else {
+			err = nil
+		}
+	}
+	return result
 }
 
 // Format is implementation of fmt.Formatter.
@@ -83,12 +98,10 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 		pad, wid, prec := getPadWidPrec(f)
 		format += fmt.Sprintf("%d.%ds", wid, prec)
 		padding, indent := bytes.Repeat([]byte{pad}, wid), bytes.Repeat([]byte{pad}, prec)
-		newLine := false
-		for err := error(e); err != nil; {
-			if newLine {
+		for idx, err := range e.UnwrapAll() {
+			if idx > 0 {
 				buf.WriteRune('\n')
 			}
-			newLine = true
 			if e2, ok := err.(*Erf); ok {
 				if !f.Flag('-') {
 					for _, line := range strings.Split(e2.Error(), "\n") {
@@ -98,30 +111,28 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 						buf.WriteRune('\n')
 					}
 				}
-				buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
+				str := fmt.Sprintf(format, e2.StackTrace())
+				if str != "" {
+					buf.WriteString(str)
+				} else {
+					buf.Write(padding)
+					buf.WriteString("* ")
+				}
 				buf.WriteRune('\n')
 				if f.Flag('+') {
 					tags := e2.Tags()
 					if len(tags) > 0 {
 						buf.Write(padding)
-						buf.WriteString("* ")
+						buf.WriteString("+ ")
 						for idx, tag := range tags {
 							if idx > 0 {
 								buf.WriteRune(' ')
 							}
-							v := "s"
-							for _, r := range tag {
-								if unicode.IsSpace(r) || r == '"' || r == '\'' {
-									v = "q"
-									break
-								}
-							}
-							buf.WriteString(fmt.Sprintf("%"+v+"=%q", tag, fmt.Sprintf("%v", e2.Tag(tag))))
+							buf.WriteString(fmt.Sprintf("%q=%q", tag, fmt.Sprintf("%v", e2.Tag(tag))))
 						}
 						buf.WriteRune('\n')
 					}
 				}
-				buf.Write(padding)
 			} else {
 				if !f.Flag('-') {
 					for _, line := range strings.Split(err.Error(), "\n") {
@@ -130,18 +141,15 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 						buf.WriteString(line)
 						buf.WriteRune('\n')
 					}
-					buf.Write(padding)
 				} else {
-					newLine = false
+					buf.Write(padding)
+					buf.WriteString("- ")
+					buf.WriteRune('\n')
 				}
 			}
+			buf.Write(padding)
 			if verb == 'X' {
 				break
-			}
-			if wErr, ok := err.(WrappedError); ok {
-				err = wErr.Unwrap()
-			} else {
-				err = nil
 			}
 		}
 	default:
@@ -189,23 +197,26 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	if e.args == nil {
 		panic("args are not using")
 	}
-	if e.tagIndexes != nil {
+	if e.tags != nil || e.tagIndexes != nil {
 		panic("tags are already attached")
 	}
 	if len(tags) > len(e.args) {
 		panic("number of tags is more than args")
 	}
-	tagIndexes := make(map[string]int, len(tags))
+	t := make([]string, 0, len(tags))
+	ti := make(map[string]int, len(tags))
 	for index, tag := range tags {
 		if tag == "" {
 			continue
 		}
-		if _, ok := tagIndexes[tag]; ok {
+		if _, ok := ti[tag]; ok {
 			panic("tag already defined")
 		}
-		tagIndexes[tag] = index
+		t = append(t, tag)
+		ti[tag] = index
 	}
-	e.tagIndexes = tagIndexes
+	e.tags = t
+	e.tagIndexes = ti
 	return e
 }
 
@@ -228,32 +239,39 @@ func (e *Erf) Tag(tag string) interface{} {
 
 // Tags returns all tags sequentially. It returns nil if tags are not attached.
 func (e *Erf) Tags() []string {
-	if e.tagIndexes == nil {
+	if e.tags == nil {
 		return nil
 	}
-	m := make(map[int]string, len(e.tagIndexes))
-	for tag, index := range e.tagIndexes {
-		m[index] = tag
-	}
-	result := make([]string, 0, len(m))
-	for i, j := 0, len(m); i < j; i++ {
-		if tag, ok := m[i]; ok {
-			result = append(result, tag)
-		}
-	}
+	result := make([]string, len(e.tags))
+	copy(result, e.tags)
 	return result
 }
 
 // PC returns program counters.
 func (e *Erf) PC() []uintptr {
-	result := make([]uintptr, len(e.pc))
-	copy(result, e.pc)
+	src := e.pc[e.top:]
+	result := make([]uintptr, len(src))
+	copy(result, src)
 	return result
 }
 
 // StackTrace returns a StackTrace of Erf.
 func (e *Erf) StackTrace() *StackTrace {
-	return NewStackTrace(e.pc...)
+	return NewStackTrace(e.pc[e.top:]...)
+}
+
+// Top sets top of program counters in Erf.
+// If the argument top is negative it returns just old value and doesn't set, otherwise sets and returns old value.
+func (e *Erf) Top(top int) int {
+	if top < 0 {
+		return e.top
+	}
+	result := e.top
+	if top > len(e.pc) {
+		panic("top out of range")
+	}
+	e.top = top
+	return result
 }
 
 func (e *Erf) initialize(skip int) {
