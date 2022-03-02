@@ -163,7 +163,7 @@ func (e *Erf) Fmt() string {
 	return e.format
 }
 
-// Len returns the length of the arguments slice.
+// Len returns the length of arguments.
 func (e *Erf) Len() int {
 	return len(e.args)
 }
@@ -225,6 +225,11 @@ func (e *Erf) Attach2(tags ...string) error {
 	return e.Attach(tags...)
 }
 
+// TagsLen returns the length of tags.
+func (e *Erf) TagsLen() int {
+	return len(e.tags)
+}
+
 // Tag returns an argument value on the given tag. It returns nil if tag is not found.
 func (e *Erf) Tag(tag string) interface{} {
 	index := -1
@@ -247,12 +252,16 @@ func (e *Erf) Tags() []string {
 	return result
 }
 
-// PC returns program counters.
+// PC returns all program counters.
 func (e *Erf) PC() []uintptr {
-	src := e.pc[e.top:]
-	result := make([]uintptr, len(src))
-	copy(result, src)
+	result := make([]uintptr, len(e.pc))
+	copy(result, e.pc)
 	return result
+}
+
+// PCLen returns the length of all program counters.
+func (e *Erf) PCLen() int {
+	return len(e.pc)
 }
 
 // StackTrace returns a StackTrace of Erf.
