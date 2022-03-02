@@ -164,9 +164,6 @@ func (t *StackTrace) Len() int {
 
 // Caller returns a StackCaller on the given index. It panics if index is out of range.
 func (t *StackTrace) Caller(index int) StackCaller {
-	if t.Len() <= 0 {
-		return StackCaller{}
-	}
 	if index < 0 || index >= t.Len() {
 		panic("index out of range")
 	}
