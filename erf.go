@@ -20,6 +20,7 @@ type Erf struct {
 	err        error
 	format     string
 	args       []interface{}
+	tags       []string
 	tagIndexes map[string]int
 	pc         []uintptr
 }
@@ -194,23 +195,26 @@ func (e *Erf) Attach(tags ...string) *Erf {
 	if e.args == nil {
 		panic("args are not using")
 	}
-	if e.tagIndexes != nil {
+	if e.tags != nil || e.tagIndexes != nil {
 		panic("tags are already attached")
 	}
 	if len(tags) > len(e.args) {
 		panic("number of tags is more than args")
 	}
-	tagIndexes := make(map[string]int, len(tags))
+	t := make([]string, 0, len(tags))
+	ti := make(map[string]int, len(tags))
 	for index, tag := range tags {
 		if tag == "" {
 			continue
 		}
-		if _, ok := tagIndexes[tag]; ok {
+		if _, ok := ti[tag]; ok {
 			panic("tag already defined")
 		}
-		tagIndexes[tag] = index
+		t = append(t, tag)
+		ti[tag] = index
 	}
-	e.tagIndexes = tagIndexes
+	e.tags = t
+	e.tagIndexes = ti
 	return e
 }
 
@@ -233,19 +237,11 @@ func (e *Erf) Tag(tag string) interface{} {
 
 // Tags returns all tags sequentially. It returns nil if tags are not attached.
 func (e *Erf) Tags() []string {
-	if e.tagIndexes == nil {
+	if e.tags == nil {
 		return nil
 	}
-	m := make(map[int]string, len(e.tagIndexes))
-	for tag, index := range e.tagIndexes {
-		m[index] = tag
-	}
-	result := make([]string, 0, len(m))
-	for i, j := 0, len(m); i < j; i++ {
-		if tag, ok := m[i]; ok {
-			result = append(result, tag)
-		}
-	}
+	result := make([]string, len(e.tags))
+	copy(result, e.tags)
 	return result
 }
 
