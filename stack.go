@@ -157,15 +157,15 @@ func (t *StackTrace) PC() []uintptr {
 	return result
 }
 
-// Len returns the length of the StackCaller slice.
-func (t *StackTrace) Len() int {
-	return len(t.callers)
-}
-
 // Caller returns a StackCaller on the given index. It panics if index is out of range.
 func (t *StackTrace) Caller(index int) StackCaller {
-	if index < 0 || index >= t.Len() {
+	if index < 0 || index >= len(t.callers) {
 		panic("index out of range")
 	}
 	return t.callers[index]
+}
+
+// Len returns the length of the length of all Caller's.
+func (t *StackTrace) Len() int {
+	return len(t.callers)
 }
