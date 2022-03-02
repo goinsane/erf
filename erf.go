@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"unicode"
 	"unsafe"
 )
 
@@ -97,12 +96,10 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 		pad, wid, prec := getPadWidPrec(f)
 		format += fmt.Sprintf("%d.%ds", wid, prec)
 		padding, indent := bytes.Repeat([]byte{pad}, wid), bytes.Repeat([]byte{pad}, prec)
-		newLine := false
-		for err := error(e); err != nil; {
-			if newLine {
+		for idx, err := range e.UnwrapAll() {
+			if idx > 0 {
 				buf.WriteRune('\n')
 			}
-			newLine = true
 			if e2, ok := err.(*Erf); ok {
 				if !f.Flag('-') {
 					for _, line := range strings.Split(e2.Error(), "\n") {
@@ -112,30 +109,27 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 						buf.WriteRune('\n')
 					}
 				}
-				buf.WriteString(fmt.Sprintf(format, e2.StackTrace()))
+				str := fmt.Sprintf(format, e2.StackTrace())
+				if str != "" {
+					buf.WriteString(str)
+				} else {
+					buf.WriteString("* ")
+				}
 				buf.WriteRune('\n')
 				if f.Flag('+') {
 					tags := e2.Tags()
 					if len(tags) > 0 {
 						buf.Write(padding)
-						buf.WriteString("* ")
+						buf.WriteString("+ ")
 						for idx, tag := range tags {
 							if idx > 0 {
 								buf.WriteRune(' ')
 							}
-							v := "s"
-							for _, r := range tag {
-								if unicode.IsSpace(r) || r == '"' || r == '\'' {
-									v = "q"
-									break
-								}
-							}
-							buf.WriteString(fmt.Sprintf("%"+v+"=%q", tag, fmt.Sprintf("%v", e2.Tag(tag))))
+							buf.WriteString(fmt.Sprintf("%q=%q", tag, fmt.Sprintf("%v", e2.Tag(tag))))
 						}
 						buf.WriteRune('\n')
 					}
 				}
-				buf.Write(padding)
 			} else {
 				if !f.Flag('-') {
 					for _, line := range strings.Split(err.Error(), "\n") {
@@ -144,18 +138,15 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 						buf.WriteString(line)
 						buf.WriteRune('\n')
 					}
-					buf.Write(padding)
 				} else {
-					newLine = false
+					buf.Write(padding)
+					buf.WriteString("- ")
+					buf.WriteRune('\n')
 				}
 			}
+			buf.Write(padding)
 			if verb == 'X' {
 				break
-			}
-			if wErr, ok := err.(WrappedError); ok {
-				err = wErr.Unwrap()
-			} else {
-				err = nil
 			}
 		}
 	default:
