@@ -38,6 +38,20 @@ func (e *Erf) Unwrap() error {
 	return nil
 }
 
+// UnwrapAll returns all errors using Unwrap method. The first element in the returned value is e.
+func (e *Erf) UnwrapAll() []error {
+	result := make([]error, 0, 4096)
+	for err := error(e); err != nil; {
+		result = append(result, err)
+		if wErr, ok := err.(WrappedError); ok {
+			err = wErr.Unwrap()
+		} else {
+			err = nil
+		}
+	}
+	return result
+}
+
 // Format is implementation of fmt.Formatter.
 // Format lists error messages and appends StackTrace's for underlying Erf and all of wrapped Erf's,
 // line by line with given format.
