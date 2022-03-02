@@ -23,6 +23,7 @@ type Erf struct {
 	tags       []string
 	tagIndexes map[string]int
 	pc         []uintptr
+	top        int
 }
 
 // Error is implementation of error.
@@ -114,6 +115,7 @@ func (e *Erf) Format(f fmt.State, verb rune) {
 				if str != "" {
 					buf.WriteString(str)
 				} else {
+					buf.Write(padding)
 					buf.WriteString("* ")
 				}
 				buf.WriteRune('\n')
@@ -247,14 +249,29 @@ func (e *Erf) Tags() []string {
 
 // PC returns program counters.
 func (e *Erf) PC() []uintptr {
-	result := make([]uintptr, len(e.pc))
-	copy(result, e.pc)
+	src := e.pc[e.top:]
+	result := make([]uintptr, len(src))
+	copy(result, src)
 	return result
 }
 
 // StackTrace returns a StackTrace of Erf.
 func (e *Erf) StackTrace() *StackTrace {
-	return NewStackTrace(e.pc...)
+	return NewStackTrace(e.pc[e.top:]...)
+}
+
+// Top sets top of program counters in Erf.
+// If the argument top is negative it returns just old value and doesn't set, otherwise sets and returns old value.
+func (e *Erf) Top(top int) int {
+	if top < 0 {
+		return e.top
+	}
+	result := e.top
+	if top > len(e.pc) {
+		panic("top out of range")
+	}
+	e.top = top
+	return result
 }
 
 func (e *Erf) initialize(skip int) {
