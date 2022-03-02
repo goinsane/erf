@@ -163,11 +163,6 @@ func (e *Erf) Fmt() string {
 	return e.format
 }
 
-// Len returns the length of arguments.
-func (e *Erf) Len() int {
-	return len(e.args)
-}
-
 // Arg returns an argument value on the given index. It panics if index is out of range.
 func (e *Erf) Arg(index int) interface{} {
 	if index < 0 || index >= len(e.args) {
@@ -184,6 +179,11 @@ func (e *Erf) Args() []interface{} {
 	result := make([]interface{}, len(e.args))
 	copy(result, e.args)
 	return result
+}
+
+// Len returns the length of all arguments.
+func (e *Erf) Len() int {
+	return len(e.args)
 }
 
 // Attach attaches tags to arguments, if arguments are given.
@@ -225,21 +225,25 @@ func (e *Erf) Attach2(tags ...string) error {
 	return e.Attach(tags...)
 }
 
-// TagsLen returns the length of tags.
-func (e *Erf) TagsLen() int {
-	return len(e.tags)
-}
-
 // Tag returns an argument value on the given tag. It returns nil if tag is not found.
 func (e *Erf) Tag(tag string) interface{} {
+	index := e.TagIndex(tag)
+	if index < 0 {
+		return nil
+	}
+	return e.args[index]
+}
+
+// TagIndex returns index of an argument on the given tag. It returns -1 if tag is not found.
+func (e *Erf) TagIndex(tag string) int {
 	index := -1
 	if idx, ok := e.tagIndexes[tag]; ok {
 		index = idx
 	}
 	if index < 0 || index >= len(e.args) {
-		return nil
+		return -1
 	}
-	return e.args[index]
+	return index
 }
 
 // Tags returns all tags sequentially. It returns nil if tags are not attached.
@@ -250,6 +254,11 @@ func (e *Erf) Tags() []string {
 	result := make([]string, len(e.tags))
 	copy(result, e.tags)
 	return result
+}
+
+// TagsLen returns the length of all tags.
+func (e *Erf) TagsLen() int {
+	return len(e.tags)
 }
 
 // PC returns all program counters.
