@@ -269,7 +269,7 @@ func (e *Erf) StackTrace() *StackTrace {
 	return NewStackTrace(e.pc[e.top:]...)
 }
 
-// Top sets top of program counters in Erf.
+// Top sets top of program counters of StackTrace method.
 // If the argument top is negative it returns just old value and doesn't set, otherwise sets and returns old value.
 func (e *Erf) Top(top int) int {
 	if top < 0 {
