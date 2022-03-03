@@ -23,7 +23,6 @@ type Erf struct {
 	tags       []string
 	tagIndexes map[string]int
 	pc         []uintptr
-	top        int
 }
 
 // Error is implementation of error.
@@ -51,6 +50,49 @@ func (e *Erf) UnwrapAll() []error {
 		}
 	}
 	return result
+}
+
+// Copy creates a shallow copy of Erf.
+func (e *Erf) Copy() *Erf {
+	return e.CopyByTop(0)
+}
+
+// CopyByTop creates a shallow copy of Erf that copies program counters downward from the argument top.
+// If the argument top is out of range, it panics.
+func (e *Erf) CopyByTop(top int) *Erf {
+	if e == nil {
+		return nil
+	}
+	if top < 0 || top > len(e.pc) {
+		panic("top out of range")
+	}
+	e2 := &Erf{
+		err:        e.err,
+		format:     e.format,
+		args:       nil,
+		tags:       nil,
+		tagIndexes: nil,
+		pc:         nil,
+	}
+	if e.args != nil {
+		e2.args = make([]interface{}, len(e.args))
+		copy(e2.args, e.args)
+	}
+	if e.tags != nil {
+		e2.tags = make([]string, len(e.tags))
+		copy(e2.tags, e.tags)
+	}
+	if e.tagIndexes != nil {
+		e2.tagIndexes = make(map[string]int, len(e.tagIndexes))
+		for key, val := range e.tagIndexes {
+			e2.tagIndexes[key] = val
+		}
+	}
+	if e.pc != nil {
+		e2.pc = make([]uintptr, len(e.pc)-top)
+		copy(e2.pc, e.pc[top:])
+	}
+	return e2
 }
 
 // Format is implementation of fmt.Formatter.
@@ -275,21 +317,7 @@ func (e *Erf) PCLen() int {
 
 // StackTrace returns a StackTrace of Erf.
 func (e *Erf) StackTrace() *StackTrace {
-	return NewStackTrace(e.pc[e.top:]...)
-}
-
-// Top sets top of program counters of StackTrace method.
-// If the argument top is negative it returns just old value and doesn't set, otherwise sets and returns old value.
-func (e *Erf) Top(top int) int {
-	if top < 0 {
-		return e.top
-	}
-	result := e.top
-	if top > len(e.pc) {
-		panic("top out of range")
-	}
-	e.top = top
-	return result
+	return NewStackTrace(e.pc...)
 }
 
 func (e *Erf) initialize(skip int) {
