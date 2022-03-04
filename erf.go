@@ -231,14 +231,10 @@ func (e *Erf) Len() int {
 // Attach attaches tags to arguments, if arguments are given.
 // If tag is "", it passes attaching tag to corresponding argument.
 // It panics for given errors:
-// 	args are not using
 // 	tags are already attached
 // 	number of tags is more than args
 // 	tag already defined
 func (e *Erf) Attach(tags ...string) *Erf {
-	if e.args == nil {
-		panic("args are not using")
-	}
 	if e.tags != nil || e.tagIndexes != nil {
 		panic("tags are already attached")
 	}
